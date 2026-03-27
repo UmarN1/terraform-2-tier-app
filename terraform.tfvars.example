@@ -1,0 +1,35 @@
+# Copy this file to terraform.tfvars and fill in your values
+# Never commit terraform.tfvars — it is in .gitignore
+
+region       = "us-east-1"
+project_name = "myapp"
+
+# VPC CIDR — the main address block for the whole network
+vpc_cidr = "10.0.0.0/16"
+
+# Public subnets — these hold the ALB, spread across two AZs
+pub_sub_1a_cidr = "10.0.1.0/24"
+pub_sub_2b_cidr = "10.0.2.0/24"
+
+# Private subnets for EC2 (app tier), one per AZ
+pri_sub_3a_cidr = "10.0.3.0/24"
+pri_sub_4b_cidr = "10.0.4.0/24"
+
+# Private subnets for RDS (db tier), one per AZ
+# Kept separate from EC2 subnets so security group rules
+# can target each tier independently
+pri_sub_5a_cidr = "10.0.5.0/24"
+pri_sub_6b_cidr = "10.0.6.0/24"
+
+# RDS credentials — use Secrets Manager in a real prod setup
+db_username = "admin"
+db_password = "changeme123"  # change this before deploying
+
+# Domain configuration for CloudFront + ACM
+# The certificate must already be issued in us-east-1
+certificate_domain_name = "yourdomain.com"
+additional_domain_name  = "app.yourdomain.com"
+
+# Set to true once your Route 53 hosted zone is configured
+# Leave false if you just want to test with the CloudFront domain
+enable_route53 = false
