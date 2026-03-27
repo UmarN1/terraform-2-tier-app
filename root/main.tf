@@ -61,6 +61,7 @@ module "asg" {
 
 
 # creating RDS instance
+# TODO: enable storage_encrypted in rds module - currently set to false
 
 module "rds" {
   source         = "../modules/rds"
