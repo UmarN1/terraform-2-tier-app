@@ -1,0 +1,172 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  TF_VERSION: "1.7.0"
+  AWS_REGION: "us-east-1"
+  # Terraform root is in the /root subfolder, not the repo root
+  TF_WORKING_DIR: "./root"
+
+jobs:
+
+  # -------------------------------------------------------
+  # Validate: runs on every push and every PR
+  # Catches formatting errors and config mistakes early
+  # -------------------------------------------------------
+  validate:
+    name: "Validate & Format"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Check formatting
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+        # If this fails, run: terraform fmt -recursive
+        # to auto-fix formatting locally before pushing
+
+      - name: Validate configuration
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+  # -------------------------------------------------------
+  # Plan: only runs on pull requests
+  # Posts the full infrastructure diff as a PR comment
+  # so reviewers can see exactly what will change
+  # -------------------------------------------------------
+  plan:
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -no-color 2>&1 | tee ../plan_output.txt
+        continue-on-error: true
+        env:
+          TF_VAR_db_username: ${{ secrets.TF_VAR_DB_USERNAME }}
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+
+      - name: Post plan as PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan_output.txt', 'utf8');
+            const maxLen = 60000;
+            const truncated = plan.length > maxLen
+              ? plan.substring(0, maxLen) + '\n\n...(plan output truncated)'
+              : plan;
+
+            const status = '${{ steps.plan.outcome }}' === 'success' ? '✅' : '❌';
+
+            const body = [
+              `### Terraform Plan ${status}`,
+              '',
+              '<details><summary>Click to see full plan output</summary>',
+              '',
+              '```hcl',
+              truncated,
+              '```',
+              '',
+              '</details>',
+              '',
+              `**Triggered by:** @${{ github.actor }} | **Branch:** \`${{ github.head_ref }}\``,
+            ].join('\n');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  # -------------------------------------------------------
+  # Apply: only runs when code is merged into main
+  # Requires manual approval via GitHub Environments
+  # before terraform apply actually runs
+  # -------------------------------------------------------
+  apply:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_db_username: ${{ secrets.TF_VAR_DB_USERNAME }}
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
