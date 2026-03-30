@@ -1,6 +1,6 @@
 # AWS Two-Tier Infrastructure — Terraform + GitHub Actions
 
-[!\[Validate \& Format](https://github.com/101Umar/terraform-2-tier-app/actions/workflows/terraform.yml/badge.svg)](https://github.com/101Umar/terraform-2-tier-app/actions/workflows/terraform.yml)
+[!\[Validate \& Format](https://github.com/UmarN1/terraform-2-tier-app/actions/workflows/terraform.yml/badge.svg)](https://github.com/UmarN1/terraform-2-tier-app/actions/workflows/terraform.yml)
 [!\[Terraform](https://img.shields.io/badge/Terraform-~>%25201.7-623CE4?logo=terraform&logoColor=white)](https://www.terraform.io/)
 [!\[AWS](https://img.shields.io/badge/AWS-us--east--1-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
 [!\[License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -158,7 +158,7 @@ aws dynamodb create-table \\\\
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/101Umar/terraform-2-tier-app.git
+git clone https://github.com/UmarN1/terraform-2-tier-app.git
 cd terraform-2-tier-app/root
 
 # 2. Create your variable values file (never commit this)
