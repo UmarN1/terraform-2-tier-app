@@ -1,23 +1,24 @@
 module "vpc" {
-  source =  "../modules/vpc"
-  region = var.region
+  source       = "../modules/vpc"
+  region       = var.region
   project_name = var.project_name
-  vpc_cidr         = var.vpc_cidr
-    pub_sub_1a_cidr = var.pub_sub_1a_cidr
-    pub_sub_2b_cidr = var.pub_sub_2b_cidr
-    pri_sub_3a_cidr = var.pri_sub_3a_cidr
-    pri_sub_4b_cidr = var.pri_sub_4b_cidr
-    pri_sub_5a_cidr = var.pri_sub_5a_cidr
-    pri_sub_6b_cidr = var.pri_sub_6b_cidr
+  vpc_cidr     = var.vpc_cidr
+
+  pub_sub_1a_cidr = var.pub_sub_1a_cidr
+  pub_sub_2b_cidr = var.pub_sub_2b_cidr
+  pri_sub_3a_cidr = var.pri_sub_3a_cidr
+  pri_sub_4b_cidr = var.pri_sub_4b_cidr
+  pri_sub_5a_cidr = var.pri_sub_5a_cidr
+  pri_sub_6b_cidr = var.pri_sub_6b_cidr
 }
 
 module "nat" {
   source = "../modules/nat"
 
-  public_subnet1_id = module.vpc.public_subnet1_id
-  igw_id        = module.vpc.igw_id
-  public_subnet2_id = module.vpc.public_subnet2_id
-  vpc_id        = module.vpc.vpc_id
+  public_subnet1_id  = module.vpc.public_subnet1_id
+  public_subnet2_id  = module.vpc.public_subnet2_id
+  igw_id             = module.vpc.igw_id
+  vpc_id             = module.vpc.vpc_id
   private_subnet3_id = module.vpc.private_subnet3_id
   private_subnet4_id = module.vpc.private_subnet4_id
   private_subnet5_id = module.vpc.private_subnet5_id
@@ -34,62 +35,54 @@ module "key" {
   source = "../modules/key"
 }
 
-# Creating Application Load balancer
+# Creating Application Load Balancer
 module "alb" {
-  source         = "../modules/alb"
-  project_name   = module.vpc.project_name
-  alb_sg_id      = module.security-group.alb_sg_id
+  source            = "../modules/alb"
+  project_name      = module.vpc.project_name
+  alb_sg_id         = module.security-group.alb_sg_id
   public_subnet1_id = module.vpc.public_subnet1_id
   public_subnet2_id = module.vpc.public_subnet2_id
-  vpc_id         = module.vpc.vpc_id
+  vpc_id            = module.vpc.vpc_id
 }
 
 module "asg" {
-  source         = "../modules/asg"
-  project_name   = module.vpc.project_name
-  key_name       = module.key.key_name
-  client_sg_id   = module.security-group.client_sg_id
+  source             = "../modules/asg"
+  project_name       = module.vpc.project_name
+  key_name           = module.key.key_name
+  client_sg_id       = module.security-group.client_sg_id
   private_subnet3_id = module.vpc.private_subnet3_id
   private_subnet4_id = module.vpc.private_subnet4_id
-  tg_arn         = module.alb.tg_arn
-  depends_on = [module.alb]  
+  tg_arn             = module.alb.tg_arn
 
-
+  depends_on = [module.alb]
 }
-
-
-
 
 # creating RDS instance
 # TODO: enable storage_encrypted in rds module - currently set to false
-
 module "rds" {
-  source         = "../modules/rds"
-  db_sg_id       = module.security-group.db_sg_id
+  source             = "../modules/rds"
+  db_sg_id           = module.security-group.db_sg_id
   private_subnet5_id = module.vpc.private_subnet5_id
   private_subnet6_id = module.vpc.private_subnet6_id
-  db_username    = var.db_username
-  db_password    = var.db_password
+  db_username        = var.db_username
+  db_password        = var.db_password
 }
 
-
-# create cloudfront distribution 
+# create cloudfront distribution
 module "cloudfront" {
-  source = "../modules/cloudfront"
+  source                  = "../modules/cloudfront"
   certificate_domain_name = var.certificate_domain_name
-  alb_domain_name = module.alb.alb_dns_name
-  additional_domain_name = var.additional_domain_name
-  project_name = module.vpc.project_name
+  alb_domain_name         = module.alb.alb_dns_name
+  additional_domain_name  = var.additional_domain_name
+  project_name            = module.vpc.project_name
 }
-
 
 # Add record in route 53 hosted zone
-
 module "route53" {
   count = var.enable_route53 ? 1 : 0
 
   source = "../modules/route53"
 
-  cloudfront_domain_name     = module.cloudfront.cloudfront_domain_name
+  cloudfront_domain_name    = module.cloudfront.cloudfront_domain_name
   cloudfront_hosted_zone_id = module.cloudfront.cloudfront_hosted_zone_id
 }
