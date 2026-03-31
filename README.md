@@ -1,9 +1,9 @@
 # AWS Two-Tier Infrastructure — Terraform + GitHub Actions
 
-[!\[Validate \& Format](https://github.com/UmarN1/terraform-2-tier-app/actions/workflows/terraform.yml/badge.svg)](https://github.com/UmarN1/terraform-2-tier-app/actions/workflows/terraform.yml)
-[!\[Terraform](https://img.shields.io/badge/Terraform-~>%25201.7-623CE4?logo=terraform&logoColor=white)](https://www.terraform.io/)
-[!\[AWS](https://img.shields.io/badge/AWS-us--east--1-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
-[!\[License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Validate & Format](https://github.com/UmarN1/terraform-2-tier-app/actions/workflows/terraform.yml/badge.svg)](https://github.com/UmarN1/terraform-2-tier-app/actions/workflows/terraform.yml)
+[![Terraform](https://img.shields.io/badge/Terraform-1.7-623CE4?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-us--east--1-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 Production-ready two-tier AWS infrastructure written entirely in Terraform, organized into reusable modules, and deployed automatically through a GitHub Actions CI/CD pipeline. Every pull request gets a full `terraform plan` posted as a comment. Every merge to `main` requires a manual approval before `terraform apply` runs.
 
